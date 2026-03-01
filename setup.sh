@@ -40,8 +40,10 @@ if [ ! -f ".env" ]; then
     echo "Creating .env file from template..."
     cp .env.example .env
     echo "⚠️  Please edit .env and add:"
-    echo "   - EDGE_SECRET (get from backend team)"
-    echo "   - REGISTRATION_TOKEN"
+    echo "   - EDGE_SECRET (shared secret from backend team)"
+    echo "   - USER_PHONE (E.164, e.g. +13107404018)"
+    echo "   - EDGE_AGENT_ID (e.g. edge_13107404018)"
+    echo "   - REGISTRATION_TOKEN (if your flow still requires it)"
     echo
     read -p "Press Enter after you've edited .env..."
 fi

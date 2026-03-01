@@ -5,21 +5,29 @@
 
 ---
 
-## 🚨 CRITICAL: Authentication Now Required
+## 🚨 CRITICAL: HMAC Authentication Required
 
-**Add this to your edge client NOW:**
+**Edge clients must send HMAC bearer tokens (not raw EDGE_SECRET).**
 
 ```typescript
-// ❌ OLD CODE (Will fail in production)
-await axios.post(`${backendUrl}/orchestrator/message`, payload);
+import crypto from 'crypto';
 
-// ✅ NEW CODE (Required)
+function generateEdgeBearerToken(edgeSecret: string, edgeAgentId: string, userPhone: string): string {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const tokenData = `${edgeAgentId}:${userPhone}:${timestamp}`;
+  const signature = crypto.createHmac('sha256', edgeSecret).update(tokenData).digest('hex');
+  return Buffer.from(`${tokenData}:${signature}`).toString('base64');
+}
+
+const token = generateEdgeBearerToken(process.env.EDGE_SECRET!, process.env.EDGE_AGENT_ID!, process.env.USER_PHONE!);
+
 await axios.post(
-  `${backendUrl}/orchestrator/message`,
+  `${backendUrl}/edge/message`,
   payload,
   {
     headers: {
-      'Authorization': `Bearer ${process.env.EDGE_SECRET}`,
+      'Authorization': `Bearer ${token}`,
+      'X-Edge-Agent-Id': process.env.EDGE_AGENT_ID,
       'Content-Type': 'application/json'
     }
   }
@@ -30,8 +38,10 @@ await axios.post(
 ```bash
 # Add to .env
 EDGE_SECRET="your-shared-secret-here"
+EDGE_AGENT_ID="edge_13107404018"
+USER_PHONE="+13107404018"
 
-# Generate secret (32 characters):
+# Generate secret (32 bytes hex):
 openssl rand -hex 32
 ```
 
@@ -52,22 +62,31 @@ echo "Backend engineer: Add this to Railway environment variables:"
 echo "EDGE_SECRET=$SECRET"
 ```
 
-### Step 2: Update Your HTTP Client
+### Step 2: Update Your HTTP Client (HMAC token)
 ```typescript
-// Create a reusable client
 import axios from 'axios';
+import crypto from 'crypto';
 
-const orchestratorClient = axios.create({
+function makeToken(secret: string, edgeAgentId: string, userPhone: string): string {
+  const ts = Math.floor(Date.now() / 1000);
+  const data = `${edgeAgentId}:${userPhone}:${ts}`;
+  const sig = crypto.createHmac('sha256', secret).update(data).digest('hex');
+  return Buffer.from(`${data}:${sig}`).toString('base64');
+}
+
+const token = makeToken(process.env.EDGE_SECRET!, process.env.EDGE_AGENT_ID!, process.env.USER_PHONE!);
+
+const edgeClient = axios.create({
   baseURL: process.env.BACKEND_URL,
   headers: {
-    'Authorization': `Bearer ${process.env.EDGE_SECRET}`,
+    'Authorization': `Bearer ${token}`,
+    'X-Edge-Agent-Id': process.env.EDGE_AGENT_ID,
     'Content-Type': 'application/json'
   },
   timeout: 10000
 });
 
-// Use it
-const response = await orchestratorClient.post('/orchestrator/message', payload);
+const response = await edgeClient.post('/edge/message', payload);
 ```
 
 ### Step 3: Add Error Handling
@@ -88,18 +107,8 @@ try {
 
 ### Step 4: Test It
 ```bash
-# Test with curl
-curl -X POST https://api-dev.ikiro.ai/orchestrator/message \
-  -H "Authorization: Bearer $EDGE_SECRET" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "chat_guid": "test",
-    "mode": "direct",
-    "sender": "+15551234567",
-    "text": "test message",
-    "timestamp": '$(date +%s)',
-    "participants": ["+15551234567"]
-  }'
+# Test WebSocket auth quickly (uses HMAC token generator in repo)
+EDGE_AGENT_ID=edge_13107404018 USER_PHONE=+13107404018 node test_websocket.js
 ```
 
 **Expected:**
@@ -113,7 +122,7 @@ curl -X POST https://api-dev.ikiro.ai/orchestrator/message \
 For complete details including:
 - Photo processing support
 - Rate limiting handling
-- HMAC signature validation (future)
+- HMAC signature validation (required)
 - Example code
 - Testing instructions
 

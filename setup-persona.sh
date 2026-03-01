@@ -55,7 +55,7 @@ while [[ $# -gt 0 ]]; do
       echo "Required:"
       echo "  --persona-id    Persona identifier (e.g., vex, echo, kael)"
       echo "  --phone         iMessage phone number in E.164 format (e.g., +14155559876)"
-      echo "  --edge-secret   Shared secret for backend authentication"
+      echo "  --edge-secret   Shared secret for backend HMAC token authentication"
       echo ""
       echo "Optional:"
       echo "  --backend-url   Backend URL (default: prod)"

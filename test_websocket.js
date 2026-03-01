@@ -5,14 +5,24 @@
  */
 
 const WebSocket = require('ws');
+const crypto = require('crypto');
 
 // Load environment variables
 require('dotenv').config();
 
 const EDGE_SECRET = process.env.EDGE_SECRET;
-const EDGE_AGENT_ID = "edge_13107404018";
+const EDGE_AGENT_ID = process.env.EDGE_AGENT_ID || "edge_13107404018";
+const USER_PHONE = process.env.USER_PHONE || "+13107404018";
 const BACKEND_URL = process.env.BACKEND_URL || "https://api-dev.ikiro.ai";
 const WS_URL = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://');
+
+function generateHmacBearerToken(secret, edgeAgentId, userPhone) {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const tokenData = `${edgeAgentId}:${userPhone}:${timestamp}`;
+  const signature = crypto.createHmac('sha256', secret).update(tokenData).digest('hex');
+  const fullToken = `${tokenData}:${signature}`;
+  return Buffer.from(fullToken).toString('base64');
+}
 
 console.log('='.repeat(60));
 console.log('WebSocket Connection Test');
@@ -23,6 +33,7 @@ console.log(`  Backend URL: ${BACKEND_URL}`);
 console.log(`  WebSocket URL: ${WS_URL}`);
 console.log(`  Edge Agent ID: ${EDGE_AGENT_ID}`);
 console.log(`  EDGE_SECRET: ${EDGE_SECRET ? EDGE_SECRET.substring(0, 10) + '...' : 'NOT SET'}`);
+console.log(`  USER_PHONE: ${USER_PHONE}`);
 console.log('');
 
 if (!EDGE_SECRET) {
@@ -30,16 +41,17 @@ if (!EDGE_SECRET) {
   process.exit(1);
 }
 
+const bearerToken = generateHmacBearerToken(EDGE_SECRET, EDGE_AGENT_ID, USER_PHONE);
 const wsUrl = `${WS_URL}/edge/ws?edge_agent_id=${EDGE_AGENT_ID}`;
 const headers = {
-  'Authorization': `Bearer ${EDGE_SECRET}`,
+  'Authorization': `Bearer ${bearerToken}`,
   'X-Edge-Agent-Id': EDGE_AGENT_ID
 };
 
 console.log('Connection Details:');
 console.log(`  URL: ${wsUrl}`);
 console.log(`  Headers:`);
-console.log(`    Authorization: Bearer ${EDGE_SECRET.substring(0, 20)}...`);
+console.log(`    Authorization: Bearer <hmac-base64:${bearerToken.substring(0, 20)}...>`);
 console.log(`    X-Edge-Agent-Id: ${EDGE_AGENT_ID}`);
 console.log('');
 console.log('Connecting...');
@@ -85,14 +97,14 @@ ws.on('error', (error) => {
     console.error('');
     console.error('Possible causes:');
     console.error('  1. EDGE_SECRET does not match backend configuration');
-    console.error('  2. Authorization header format is incorrect');
-    console.error('  3. WebSocket endpoint requires different authentication');
+    console.error('  2. HMAC token payload mismatch (edge_agent_id / user_phone)');
+    console.error('  3. WebSocket endpoint requires HMAC Bearer auth');
     console.error('  4. Backend EDGE_SECRET environment variable not set');
     console.error('');
     console.error('For Backend Engineer:');
     console.error('  - Check Railway environment variable: EDGE_SECRET');
     console.error('  - Verify WebSocket auth middleware is checking: req.headers.authorization');
-    console.error(`  - Expected value: "Bearer ${EDGE_SECRET.substring(0, 20)}..."`);
+    console.error('  - Expected format: Bearer <base64(edge_agent_id:user_phone:timestamp:signature)>');
   }
 });
 
