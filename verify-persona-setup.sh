@@ -92,6 +92,18 @@ require_file "${PROJECT_DIR}/config.yaml" "config.yaml"
 require_file "${PROJECT_DIR}/.env" ".env"
 require_file "${PLIST_PATH}" "LaunchDaemon plist"
 
+log_step "Legacy daemon conflicts"
+for LEGACY_LABEL in "com.sage.edge-agent" "com.archety.edge-agent"; do
+  LEGACY_PLIST="/Library/LaunchDaemons/${LEGACY_LABEL}.plist"
+  if launchctl list 2>/dev/null | grep -q "$LEGACY_LABEL"; then
+    check_fail "Legacy daemon '${LEGACY_LABEL}' is loaded in launchd — stop it with: sudo launchctl bootout system/${LEGACY_LABEL}"
+  elif [[ -f "$LEGACY_PLIST" ]]; then
+    check_warn "Legacy plist exists but not loaded: ${LEGACY_PLIST} — consider removing it"
+  else
+    check_ok "No legacy daemon: ${LEGACY_LABEL}"
+  fi
+done
+
 log_step "Config sanity"
 if [[ -f "${PROJECT_DIR}/config.yaml" ]]; then
   AGENT_ID=$(grep -E '^[[:space:]]*agent_id:' "${PROJECT_DIR}/config.yaml" | sed -E 's/.*"([^"]+)".*/\1/' || true)
@@ -122,6 +134,13 @@ if launchctl print "system/${PLIST_LABEL}" >/tmp/${PLIST_LABEL}.print 2>/dev/nul
   fi
 else
   check_fail "launchd service not loaded: system/${PLIST_LABEL}"
+fi
+
+log_step "Native module ABI check"
+if sudo -u "$MAC_USER" bash -lc "cd '${PROJECT_DIR}' && node -e \"require('better-sqlite3')\"" >/dev/null 2>&1; then
+  check_ok "better-sqlite3 native module loads OK"
+else
+  check_fail "better-sqlite3 failed to load — run: cd ${PROJECT_DIR} && npm rebuild"
 fi
 
 log_step "Health endpoint"

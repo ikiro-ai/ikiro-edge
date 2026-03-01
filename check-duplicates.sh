@@ -16,14 +16,14 @@ echo ""
 echo "Checking for running edge agent instances..."
 echo ""
 
-# Get all edge-relay index.js processes
-PROCESSES=$(ps aux | grep -E "edge-relay.*index.js" | grep -v grep || true)
+# Get all edge-relay and archety-edge index.js processes
+PROCESSES=$(ps aux | grep -E "(edge-relay|archety-edge).*index.js" | grep -v grep || true)
 
 if [ -z "$PROCESSES" ]; then
     echo "❌ No edge agent instances found running"
     echo ""
     echo "To start the service:"
-    echo "  sudo launchctl kickstart system/com.sage.edge-agent"
+    echo "  sudo launchctl kickstart system/com.archety.edge-<persona><shard>"
     exit 0
 fi
 
@@ -51,7 +51,7 @@ if [ "$INSTANCE_COUNT" -eq 1 ]; then
         echo ""
         PID=$(echo "$PROCESSES" | awk '{print $2}')
         echo "  kill $PID"
-        echo "  sudo launchctl kickstart system/com.sage.edge-agent"
+        echo "  sudo launchctl kickstart system/com.archety.edge-<persona><shard>"
     fi
     exit 0
 fi
@@ -106,12 +106,12 @@ if [ "$ROOT_COUNT" -ge 1 ]; then
             # Verify
             echo ""
             echo "Verifying..."
-            REMAINING=$(ps aux | grep -E "edge-relay.*index.js" | grep -v grep | wc -l | xargs)
+            REMAINING=$(ps aux | grep -E "(edge-relay|archety-edge).*index.js" | grep -v grep | wc -l | xargs)
             if [ "$REMAINING" -eq 1 ]; then
                 echo "✅ Success! Only LaunchDaemon instance remains"
             else
                 echo "⚠️  $REMAINING instances still running. Check manually:"
-                ps aux | grep -E "edge-relay.*index.js" | grep -v grep
+                ps aux | grep -E "(edge-relay|archety-edge).*index.js" | grep -v grep
             fi
         else
             echo "Cancelled. No instances killed."
@@ -124,22 +124,22 @@ else
     echo ""
     echo "Recommended action:"
     echo "  1. Kill all user instances:"
-    echo "     pkill -u $(whoami) -f 'edge-relay.*index.js'"
+    echo "     pkill -u $(whoami) -f '(edge-relay|archety-edge).*index.js'"
     echo ""
     echo "  2. Start LaunchDaemon:"
-    echo "     sudo launchctl kickstart system/com.sage.edge-agent"
+    echo "     sudo launchctl kickstart system/com.archety.edge-<persona><shard>"
     echo ""
     read -p "Kill all user instances now? [y/N] " -n 1 -r
     echo ""
 
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo "Killing all user instances..."
-        pkill -u $(whoami) -f "edge-relay.*index.js" || echo "No processes to kill"
+        pkill -u $(whoami) -f "(edge-relay|archety-edge).*index.js" || echo "No processes to kill"
         sleep 2
         echo "✅ Done"
         echo ""
         echo "Now start the LaunchDaemon:"
-        echo "  sudo launchctl kickstart system/com.sage.edge-agent"
+        echo "  sudo launchctl kickstart system/com.archety.edge-<persona><shard>"
     else
         echo "Cancelled."
     fi
@@ -149,5 +149,5 @@ echo ""
 echo "============================================================"
 echo "Current Status:"
 echo "============================================================"
-ps aux | grep -E "edge-relay.*index.js" | grep -v grep || echo "No instances running"
+ps aux | grep -E "(edge-relay|archety-edge).*index.js" | grep -v grep || echo "No instances running"
 echo ""

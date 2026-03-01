@@ -71,6 +71,8 @@ fi
 EDGE_SECRET=$(grep "^EDGE_SECRET=" "$PROJECT_DIR/.env" | cut -d '=' -f2-)
 BACKEND_URL=$(grep "^BACKEND_URL=" "$PROJECT_DIR/.env" | cut -d '=' -f2-)
 USER_PHONE=$(grep "^USER_PHONE=" "$PROJECT_DIR/.env" | cut -d '=' -f2-)
+EDGE_AGENT_ID=$(grep "^EDGE_AGENT_ID=" "$PROJECT_DIR/.env" | cut -d '=' -f2-)
+ADMIN_PORT=$(grep "^ADMIN_PORT=" "$PROJECT_DIR/.env" | cut -d '=' -f2-)
 
 # Validate required variables
 if [ -z "$EDGE_SECRET" ]; then
@@ -88,10 +90,22 @@ if [ -z "$USER_PHONE" ]; then
     exit 1
 fi
 
+if [ -z "$EDGE_AGENT_ID" ]; then
+    echo "Error: EDGE_AGENT_ID not found in .env"
+    exit 1
+fi
+
+if [ -z "$ADMIN_PORT" ]; then
+    echo "Error: ADMIN_PORT not found in .env"
+    exit 1
+fi
+
 echo "Environment variables loaded:"
 echo "  EDGE_SECRET: ${EDGE_SECRET:0:20}..."
 echo "  BACKEND_URL: $BACKEND_URL"
 echo "  USER_PHONE: $USER_PHONE"
+echo "  EDGE_AGENT_ID: $EDGE_AGENT_ID"
+echo "  ADMIN_PORT: $ADMIN_PORT"
 
 # Create plist file
 cat > "$PLIST_DEST" << EOF
@@ -108,10 +122,14 @@ cat > "$PLIST_DEST" << EOF
     </array>
     <key>WorkingDirectory</key>
     <string>$PROJECT_DIR</string>
+    <key>UserName</key>
+    <string>$REAL_USER</string>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
     <true/>
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
     <key>StandardOutPath</key>
     <string>$PROJECT_DIR/logs/edge-agent.out.log</string>
     <key>StandardErrorPath</key>
@@ -130,7 +148,13 @@ cat > "$PLIST_DEST" << EOF
         <string>$BACKEND_URL</string>
         <key>USER_PHONE</key>
         <string>$USER_PHONE</string>
+        <key>EDGE_AGENT_ID</key>
+        <string>$EDGE_AGENT_ID</string>
+        <key>ADMIN_PORT</key>
+        <string>$ADMIN_PORT</string>
     </dict>
+    <key>ProcessType</key>
+    <string>Interactive</string>
 </dict>
 </plist>
 EOF

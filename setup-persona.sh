@@ -233,6 +233,11 @@ log_step "Installing dependencies"
 sudo -u "$MAC_USER" bash -c "cd '$PROJECT_DIR' && npm install --production=false 2>&1" | tail -1
 log_done "npm dependencies installed"
 
+# Rebuild native modules to match current Node ABI
+log_info "Rebuilding native modules..."
+sudo -u "$MAC_USER" bash -c "cd '$PROJECT_DIR' && npm rebuild 2>&1" | tail -3
+log_done "Native modules rebuilt"
+
 # Build native Swift helper
 log_info "Building native Swift helper..."
 if [[ -d "${PROJECT_DIR}/native/messages-helper" ]]; then
@@ -350,6 +355,20 @@ PLIST_LABEL="com.archety.edge-${PERSONA_ID}${SHARD_ID}"
 PLIST_PATH="/Library/LaunchDaemons/${PLIST_LABEL}.plist"
 ENTRY_FILE="${PROJECT_DIR}/dist/admin-portal/server/index.js"
 
+# Clean up legacy daemons that may conflict
+for LEGACY_LABEL in "com.sage.edge-agent" "com.archety.edge-agent"; do
+  LEGACY_PLIST="/Library/LaunchDaemons/${LEGACY_LABEL}.plist"
+  if launchctl list 2>/dev/null | grep -q "$LEGACY_LABEL"; then
+    log_warn "Stopping legacy daemon: ${LEGACY_LABEL}"
+    launchctl bootout "system/${LEGACY_LABEL}" 2>/dev/null || true
+    launchctl unload "$LEGACY_PLIST" 2>/dev/null || true
+  fi
+  if [[ -f "$LEGACY_PLIST" ]]; then
+    log_warn "Removing legacy plist: ${LEGACY_PLIST}"
+    rm -f "$LEGACY_PLIST"
+  fi
+done
+
 # Stop existing service if running
 if launchctl list 2>/dev/null | grep -q "$PLIST_LABEL"; then
   log_warn "Stopping existing service..."
@@ -396,7 +415,7 @@ cat > "$PLIST_PATH" << PLIST
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
-        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <string>$(dirname "$NODE_PATH"):/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
         <key>NODE_ENV</key>
         <string>${ENVIRONMENT}</string>
         <key>HOME</key>

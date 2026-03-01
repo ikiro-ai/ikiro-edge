@@ -11,6 +11,12 @@ PID_FILE="$SCRIPT_DIR/edge-agent.pid"
 LOG_FILE="$SCRIPT_DIR/edge-agent.log"
 NODE_BIN="$(which node)"
 
+# Read ADMIN_PORT from .env (fallback to 3100)
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    ADMIN_PORT=$(grep "^ADMIN_PORT=" "$SCRIPT_DIR/.env" | cut -d '=' -f2-)
+fi
+ADMIN_PORT="${ADMIN_PORT:-3100}"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -50,8 +56,8 @@ status() {
     if is_running; then
         PID=$(cat "$PID_FILE")
         log_info "Edge agent + admin portal is running (PID: $PID)"
-        log_info "📊 Admin Portal: http://127.0.0.1:3100"
-        log_info "🔍 Health Check: http://127.0.0.1:3001/health"
+        log_info "Admin Portal: http://127.0.0.1:${ADMIN_PORT}"
+        log_info "Health Check: http://127.0.0.1:3001/health"
 
         # Show resource usage
         ps -p "$PID" -o pid,pcpu,pmem,etime,command 2>/dev/null || true
@@ -102,9 +108,9 @@ start() {
     # Verify it's actually running
     if ps -p "$PID" > /dev/null 2>&1; then
         echo "$PID" > "$PID_FILE"
-        log_info "✅ Edge agent and admin portal started successfully (PID: $PID)"
-        log_info "📊 Admin Portal: http://127.0.0.1:3100"
-        log_info "🔍 Health Check: http://127.0.0.1:3001/health"
+        log_info "Edge agent and admin portal started successfully (PID: $PID)"
+        log_info "Admin Portal: http://127.0.0.1:${ADMIN_PORT}"
+        log_info "Health Check: http://127.0.0.1:3001/health"
         log_info "View logs: tail -f $LOG_FILE"
     else
         log_error "Failed to start edge agent and admin portal"
@@ -211,7 +217,7 @@ case "${1:-}" in
         echo "  logs -f   Follow logs in real-time"
         echo ""
         echo "Access Points:"
-        echo "  Admin Portal:  http://127.0.0.1:3100"
+        echo "  Admin Portal:  http://127.0.0.1:${ADMIN_PORT}"
         echo "  Health Check:  http://127.0.0.1:3001/health"
         echo ""
         exit 1
