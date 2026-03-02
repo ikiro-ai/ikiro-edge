@@ -81,37 +81,7 @@ See [admin-portal/README.md](./admin-portal/README.md) for full documentation.
 ./edge-agent.sh logs -f    # Live tail logs
 ```
 
-### Auto-Start Service (LaunchDaemon)
-
-The edge agent can run as a system service that starts automatically on boot:
-
-```bash
-# Install service (builds and enables auto-start)
-npm run service:install
-
-# Check service status
-npm run service:status
-
-# View service logs
-npm run service:logs          # Live tail stdout
-npm run service:errors        # Live tail stderr
-
-# Restart service
-npm run service:restart
-
-# Uninstall service
-npm run service:uninstall
-```
-
-**Service Details:**
-- Starts automatically on Mac boot
-- Restarts automatically if it crashes
-- Runs in background as system daemon
-- Logs to `logs/edge-agent.out.log` and `logs/edge-agent.err.log`
-
-**See [Auto-Start Guide](docs/setup/AUTO_START.md) for details.**
-
-### Multi-Persona Setup
+### Multi-Persona Setup (Production)
 
 Run multiple personas (Sage, Vex, Echo, Kael, etc.) on a single Mac mini, each with its own phone number:
 
@@ -130,7 +100,7 @@ sudo ./teardown-persona.sh --persona-id vex
 sudo ./teardown-persona.sh --persona-id vex --delete-user  # also remove macOS account
 ```
 
-`setup-persona.sh` automates: macOS user creation, repo clone, dependency install, native helper build, `config.yaml` and `.env` generation with auto-assigned unique ports, and LaunchDaemon installation. After running it, follow the printed checklist for manual steps (Fast User Switching login, iMessage sign-in, macOS permissions).
+`setup-persona.sh` automates: macOS user creation, repo clone, dependency install, native helper build, `config.yaml` and `.env` generation with auto-assigned unique ports, and LaunchAgent installation. Each persona runs as a user-domain LaunchAgent with auto-start on boot and crash recovery. After running it, follow the printed checklist for manual steps (Fast User Switching login, iMessage sign-in, macOS permissions).
 
 **See [Multi-Persona Setup Guide](docs/setup/MULTI_PERSONA_EDGE_SETUP.md) for architecture details and validation steps.**
 
@@ -307,7 +277,7 @@ REGISTRATION_TOKEN=your_registration_token
 - Fast reflex responses (1s message detection)
 - Batch AppleScript execution
 - WebSocket real-time commands
-- Production-ready with LaunchDaemon auto-start
+- Production-ready with LaunchAgent auto-start
 
 **Status:** Feature-complete and ready for production use
 

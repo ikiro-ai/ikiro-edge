@@ -125,26 +125,22 @@ npm run build
 
 ### Auto-Start on Boot (Production)
 
-For production use, install the edge agent as a system service:
+For production use, provision personas with `setup-persona.sh` which installs a user-domain LaunchAgent with auto-start and crash recovery:
 
 ```bash
-# Install service (starts on boot, restarts on crash)
-npm run service:install
+sudo ./setup-persona.sh \
+  --persona-id luna \
+  --phone "+12137288322" \
+  --edge-secret "your_shared_secret"
 
-# Check status
-npm run service:status
+# Restart a persona
+launchctl kickstart -k gui/$(id -u)/com.archety.edge-luna
 
-# View live logs
-npm run service:logs
-
-# Restart service
-npm run service:restart
-
-# Uninstall service
-npm run service:uninstall
+# View all personas and their status
+./list-personas.sh
 ```
 
-**See [Auto-Start Guide](./AUTO_START.md) for complete setup and troubleshooting.**
+**See [Multi-Persona Setup Guide](./MULTI_PERSONA_EDGE_SETUP.md) for complete setup and troubleshooting.**
 
 ## Optional: SSH Access
 

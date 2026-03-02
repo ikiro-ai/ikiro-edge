@@ -6,7 +6,6 @@ Complete guide to configuring the edge relay for optimal performance.
 
 - **`config.yaml`** - Runtime configuration
 - **`.env`** - Secrets and credentials
-- **`com.archety.edge-agent.plist`** - LaunchAgent configuration (optional)
 
 ## config.yaml
 
@@ -167,24 +166,11 @@ logging:
   level: "warn"
 ```
 
-## Auto-Start on Boot (Optional)
+## Auto-Start on Boot
 
-To run the edge agent automatically on system startup:
+For production auto-start, use `setup-persona.sh` which provisions a user-domain LaunchAgent per persona. See the [Multi-Persona Setup Guide](./MULTI_PERSONA_EDGE_SETUP.md) for details.
 
-```bash
-# Load LaunchAgent
-launchctl load ~/Library/LaunchAgents/com.archety.edge-agent.plist
-
-# Enable auto-start (edit plist first)
-nano ~/Library/LaunchAgents/com.archety.edge-agent.plist
-# Change <key>RunAtLoad</key><false/> to <true/>
-
-# Restart LaunchAgent
-launchctl unload ~/Library/LaunchAgents/com.archety.edge-agent.plist
-launchctl load ~/Library/LaunchAgents/com.archety.edge-agent.plist
-```
-
-**Note:** Using `./edge-agent.sh` is the recommended way to manage the service.
+For development, use `./edge-agent.sh start` to run manually.
 
 ## Logging Configuration
 

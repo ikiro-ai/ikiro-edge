@@ -1,6 +1,6 @@
 #!/bin/bash
 # Edge Agent Duplicate Instance Checker and Cleaner
-# Ensures only the LaunchDaemon instance is running
+# Ensures only the LaunchAgent instance is running
 
 set -e
 
@@ -35,19 +35,19 @@ echo "$PROCESSES"
 echo ""
 
 if [ "$INSTANCE_COUNT" -eq 1 ]; then
-    # Check if it's the LaunchDaemon
+    # Check if it's the LaunchAgent
     ROOT_COUNT=$(echo "$PROCESSES" | grep -c "^root" || true)
 
     if [ "$ROOT_COUNT" -eq 1 ]; then
-        echo "✅ Only one instance running (LaunchDaemon) - no duplicates found"
+        echo "✅ Only one instance running (LaunchAgent) - no duplicates found"
         echo ""
         PID=$(echo "$PROCESSES" | awk '{print $2}')
-        echo "LaunchDaemon PID: $PID"
+        echo "LaunchAgent PID: $PID"
     else
-        echo "⚠️  Only one instance running, but it's NOT the LaunchDaemon"
+        echo "⚠️  Only one instance running, but it's NOT the LaunchAgent"
         echo ""
         echo "This might be a manually started instance."
-        echo "Consider stopping it and using the LaunchDaemon instead:"
+        echo "Consider stopping it and using the LaunchAgent instead:"
         echo ""
         PID=$(echo "$PROCESSES" | awk '{print $2}')
         echo "  kill $PID"
@@ -60,14 +60,14 @@ fi
 echo "⚠️  DUPLICATE INSTANCES DETECTED!"
 echo ""
 
-# Identify LaunchDaemon (root) and user instances
+# Identify LaunchAgent (root) and user instances
 ROOT_INSTANCES=$(echo "$PROCESSES" | grep "^root" || true)
 USER_INSTANCES=$(echo "$PROCESSES" | grep -v "^root" || true)
 
 ROOT_COUNT=$(echo "$ROOT_INSTANCES" | grep -v "^$" | wc -l | xargs)
 USER_COUNT=$(echo "$USER_INSTANCES" | grep -v "^$" | wc -l | xargs)
 
-echo "LaunchDaemon instances (root): $ROOT_COUNT"
+echo "LaunchAgent instances (root): $ROOT_COUNT"
 if [ -n "$ROOT_INSTANCES" ]; then
     echo "$ROOT_INSTANCES"
 fi
@@ -81,8 +81,8 @@ echo ""
 
 # Determine what to kill
 if [ "$ROOT_COUNT" -ge 1 ]; then
-    # LaunchDaemon is running - kill user instances
-    echo "Strategy: Keep LaunchDaemon, kill user instances"
+    # LaunchAgent is running - kill user instances
+    echo "Strategy: Keep LaunchAgent, kill user instances"
     echo ""
 
     if [ "$USER_COUNT" -ge 1 ]; then
@@ -108,7 +108,7 @@ if [ "$ROOT_COUNT" -ge 1 ]; then
             echo "Verifying..."
             REMAINING=$(ps aux | grep -E "(edge-relay|archety-edge).*index.js" | grep -v grep | wc -l | xargs)
             if [ "$REMAINING" -eq 1 ]; then
-                echo "✅ Success! Only LaunchDaemon instance remains"
+                echo "✅ Success! Only LaunchAgent instance remains"
             else
                 echo "⚠️  $REMAINING instances still running. Check manually:"
                 ps aux | grep -E "(edge-relay|archety-edge).*index.js" | grep -v grep
@@ -118,15 +118,15 @@ if [ "$ROOT_COUNT" -ge 1 ]; then
         fi
     fi
 else
-    # No LaunchDaemon running - multiple user instances
-    echo "⚠️  No LaunchDaemon instance found!"
+    # No LaunchAgent running - multiple user instances
+    echo "⚠️  No LaunchAgent instance found!"
     echo "Multiple user instances are running."
     echo ""
     echo "Recommended action:"
     echo "  1. Kill all user instances:"
     echo "     pkill -u $(whoami) -f '(edge-relay|archety-edge).*index.js'"
     echo ""
-    echo "  2. Start LaunchDaemon:"
+    echo "  2. Start LaunchAgent:"
     echo "     sudo launchctl kickstart system/com.archety.edge-<persona><shard>"
     echo ""
     read -p "Kill all user instances now? [y/N] " -n 1 -r
@@ -138,7 +138,7 @@ else
         sleep 2
         echo "✅ Done"
         echo ""
-        echo "Now start the LaunchDaemon:"
+        echo "Now start the LaunchAgent:"
         echo "  sudo launchctl kickstart system/com.archety.edge-<persona><shard>"
     else
         echo "Cancelled."

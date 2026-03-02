@@ -21,11 +21,11 @@ fi
 if [ "$INSTANCE_COUNT" -eq 1 ]; then
     ROOT_COUNT=$(echo "$PROCESSES" | grep -c "^root" || true)
     if [ "$ROOT_COUNT" -eq 1 ]; then
-        echo "Status: RUNNING (LaunchDaemon)"
+        echo "Status: RUNNING (LaunchAgent)"
         PID=$(echo "$PROCESSES" | awk '{print $2}')
         echo "PID: $PID"
     else
-        echo "Status: RUNNING (Manual - not LaunchDaemon)"
+        echo "Status: RUNNING (Manual - not LaunchAgent)"
         PID=$(echo "$PROCESSES" | awk '{print $2}')
         echo "PID: $PID"
     fi
