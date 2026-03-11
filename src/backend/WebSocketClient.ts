@@ -26,6 +26,7 @@ export class WebSocketClient {
   private onCommandCallback: ((command: EdgeCommandWrapper) => Promise<void>) | null = null;
   private onConnectedCallback: (() => void) | null = null;
   private onDisconnectedCallback: (() => void) | null = null;
+  private onConfigUpdateCallback: ((config: Record<string, any>) => void) | null = null;
 
   constructor(
     backendUrl: string,
@@ -66,6 +67,13 @@ export class WebSocketClient {
    */
   onDisconnected(callback: () => void): void {
     this.onDisconnectedCallback = callback;
+  }
+
+  /**
+   * Register callback for config updates from backend
+   */
+  onConfigUpdate(callback: (config: Record<string, any>) => void): void {
+    this.onConfigUpdateCallback = callback;
   }
 
   /**
@@ -188,6 +196,9 @@ export class WebSocketClient {
 
         case 'config_update':
           this.logger.info('Received config update:', message.data);
+          if (this.onConfigUpdateCallback) {
+            this.onConfigUpdateCallback(message.data);
+          }
           break;
 
         default:

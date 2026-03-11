@@ -56,6 +56,12 @@ export interface IMessageTransport {
   sendMultiBubble(threadId: string, bubbles: string[], isGroup: boolean, batched?: boolean): Promise<boolean>;
 
   /**
+   * Set typing indicator state for a chat (requires typing-helper daemon)
+   * Returns false if typing indicators are not available
+   */
+  setTypingIndicator(threadId: string, isTyping: boolean): Promise<boolean>;
+
+  /**
    * Get transport name for logging
    */
   getName(): string;

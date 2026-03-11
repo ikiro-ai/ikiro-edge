@@ -14,6 +14,7 @@
     "test:unit": "jest __tests__/unit",
     "test:integration": "jest __tests__/integration",
     "native:build": "cd native/messages-helper && swift build -c release",
+    "native:build-typing": "cd native/typing-helper && swift build -c release",
     "service:logs": "tail -f logs/edge-agent.out.log",
     "service:errors": "tail -f logs/edge-agent.err.log",
     "admin:install": "cd admin-portal/client && npm install",

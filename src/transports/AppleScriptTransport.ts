@@ -98,6 +98,10 @@ export class AppleScriptTransport implements IMessageTransport {
   /**
    * Get transport name for logging
    */
+  async setTypingIndicator(_threadId: string, _isTyping: boolean): Promise<boolean> {
+    return false; // Not supported without typing-helper daemon
+  }
+
   getName(): string {
     return 'AppleScriptTransport';
   }

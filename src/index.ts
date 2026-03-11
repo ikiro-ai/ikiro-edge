@@ -186,6 +186,13 @@ class EdgeAgent {
       }
     });
 
+    this.wsClient.onConfigUpdate((config) => {
+      if (config.persona_id && config.persona_id !== this.config.edge.persona_id) {
+        const result = this.switchPersona(config.persona_id);
+        this.logger.info(`🔄 Remote persona switch: ${result.previous} → ${result.current}`);
+      }
+    });
+
     this.wsClient.onDisconnected(() => {
       this.logger.warn('🔌 WebSocket disconnected - falling back to HTTP polling');
       this.healthCheck.setWebSocketConnected(false);
@@ -498,8 +505,14 @@ class EdgeAgent {
         attachments: attachmentSummaries.length > 0 ? attachmentSummaries : undefined
       };
 
+      // Show typing indicator while backend processes
+      await this.transport.setTypingIndicator(message.threadId, true);
+
       const response = await this.backend.sendMessage(backendRequest);
       this.logger.info(`⬇️  BACKEND RESPONSE: should_respond=${response.should_respond}`);
+
+      // Clear typing indicator once we have a response
+      await this.transport.setTypingIndicator(message.threadId, false);
 
       if (response.mini_app_triggered) {
         this.contextManager.upsertContext({
@@ -631,6 +644,9 @@ class EdgeAgent {
       }
 
     } catch (error: any) {
+      // Clear typing indicator on error so it doesn't get stuck
+      await this.transport.setTypingIndicator(message.threadId, false).catch(() => {});
+
       this.logger.error('Error processing message:', error.message);
 
       // Track error
@@ -854,12 +870,7 @@ class EdgeAgent {
    */
   private async applyFeatureFlagOverrides(): Promise<void> {
     try {
-      // Override persona_id from PostHog
-      const personaOverride = await this.posthog.getConfig<string>('edge-persona-id', '');
-      if (personaOverride && personaOverride !== this.config.edge.persona_id) {
-        this.logger.info(`Feature flag override: persona_id ${this.config.edge.persona_id} → ${personaOverride}`);
-        this.config.edge.persona_id = personaOverride;
-      }
+      // persona_id is now managed via WebSocket config_update (not PostHog)
 
       // Override iMessage poll interval
       const pollOverride = await this.posthog.getConfig<number>('edge-poll-interval', 0);

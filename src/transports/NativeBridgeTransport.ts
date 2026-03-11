@@ -1,5 +1,6 @@
 import { IMessageTransport, IncomingMessage, MessageAttachment } from '../interfaces/IMessageTransport';
 import { AppleScriptSender } from './AppleScriptSender';
+import { TypingIndicatorClient } from './TypingIndicatorClient';
 import { ILogger } from '../interfaces/ILogger';
 import { NativeBridgeClient, BridgeMessagePayload, BridgeAttachmentPayload } from './NativeBridgeClient';
 
@@ -10,11 +11,13 @@ interface NativeBridgeTransportOptions {
   dbPath: string;
   stateFilePath?: string;
   maxMessageAgeSeconds?: number;
+  typingSocketPath?: string;
 }
 
 export class NativeBridgeTransport implements IMessageTransport {
   private readonly sender: AppleScriptSender;
   private readonly bridge: NativeBridgeClient;
+  private readonly typingClient: TypingIndicatorClient;
   private readonly queue: IncomingMessage[] = [];
   private running = false;
 
@@ -23,6 +26,10 @@ export class NativeBridgeTransport implements IMessageTransport {
     private readonly logger: ILogger
   ) {
     this.sender = new AppleScriptSender(logger);
+    this.typingClient = new TypingIndicatorClient(
+      options.typingSocketPath || '/tmp/typing-helper.sock',
+      logger
+    );
     const bridgeArgs = [
       '--db-path',
       options.dbPath,
@@ -63,6 +70,9 @@ export class NativeBridgeTransport implements IMessageTransport {
     await this.bridge.start();
     this.running = true;
     this.logger.info('Native bridge transport started');
+
+    // Probe typing indicator daemon (optional — degrades gracefully)
+    await this.typingClient.probe();
   }
 
   stop(): void {
@@ -101,6 +111,10 @@ export class NativeBridgeTransport implements IMessageTransport {
     }
 
     return this.sender.sendMultiBubble(threadId, bubbles, isGroup, batched);
+  }
+
+  async setTypingIndicator(threadId: string, isTyping: boolean): Promise<boolean> {
+    return this.typingClient[isTyping ? 'startTyping' : 'stopTyping'](threadId);
   }
 
   getName(): string {

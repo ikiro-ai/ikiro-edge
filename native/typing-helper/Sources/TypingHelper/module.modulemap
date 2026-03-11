@@ -1,0 +1,4 @@
+module IMCorePrivate [system] {
+    header "IMCore.h"
+    export *
+}
